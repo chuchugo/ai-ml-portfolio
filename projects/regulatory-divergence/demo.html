@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#07060f; overflow:hidden; width:100vw; height:100vh; font-family:'Inter',sans-serif; }
+  .scene { position:absolute; inset:0; display:flex; flex-direction:column; padding:8px; gap:5px; }
+  .hud { display:flex; justify-content:space-between; flex-shrink:0; }
+  .chip { background:rgba(0,0,0,0.65); border:1px solid rgba(167,139,250,0.25); border-radius:5px; padding:3px 8px; }
+  .chip-l { font-size:6px; font-weight:700; letter-spacing:0.1em; color:rgba(167,139,250,0.7); text-transform:uppercase; }
+  .chip-v { font-size:9px; font-weight:700; color:#c4b5fd; }
+  /* Two doc panels side by side */
+  .docs { display:flex; gap:5px; flex-shrink:0; }
+  .doc-panel { flex:1; background:rgba(0,0,0,0.45); border:1px solid rgba(167,139,250,0.15); border-radius:6px; padding:6px; }
+  .doc-header { font-size:7px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px; }
+  .doc-header.fda { color:#60a5fa; }
+  .doc-header.ema { color:#34d399; }
+  .doc-lines { display:flex; flex-direction:column; gap:2px; }
+  .doc-line { height:4px; border-radius:2px; background:rgba(255,255,255,0.07); }
+  .doc-line.highlight { background:rgba(167,139,250,0.35); animation:lineHL 0.4s ease; }
+  @keyframes lineHL { from{opacity:0;transform:scaleX(0.7)} to{opacity:1;transform:none} }
+  .doc-excerpt { font-size:7px; color:rgba(255,255,255,0.5); line-height:1.5; margin-top:3px; min-height:28px; font-style:italic; }
+  /* Verdict */
+  .verdict-row { display:flex; align-items:center; gap:5px; flex-shrink:0; }
+  .verdict-label { font-size:6px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:rgba(167,139,250,0.6); width:56px; flex-shrink:0; }
+  .verdict-chips { display:flex; gap:3px; flex:1; }
+  .v-chip { flex:1; border-radius:4px; padding:3px 5px; text-align:center; font-size:8px; font-weight:700; border:1px solid; transition:all 0.3s; opacity:0.25; }
+  .v-chip.agree { color:#34d399; border-color:rgba(52,211,153,0.4); }
+  .v-chip.diverge { color:#f87171; border-color:rgba(248,113,113,0.4); }
+  .v-chip.silent { color:#fbbf24; border-color:rgba(251,191,36,0.4); }
+  .v-chip.active.agree { opacity:1; background:rgba(52,211,153,0.15); box-shadow:0 0 10px rgba(52,211,153,0.25); }
+  .v-chip.active.diverge { opacity:1; background:rgba(248,113,113,0.15); box-shadow:0 0 10px rgba(248,113,113,0.25); }
+  .v-chip.active.silent { opacity:1; background:rgba(251,191,36,0.15); box-shadow:0 0 10px rgba(251,191,36,0.25); }
+  /* Pipeline */
+  .pipeline { display:flex; align-items:center; gap:3px; flex-shrink:0; }
+  .pipe-step { flex:1; background:rgba(0,0,0,0.4); border:1px solid rgba(167,139,250,0.15); border-radius:4px; padding:3px 4px; text-align:center; transition:border-color 0.3s,background 0.3s; }
+  .pipe-step.active { border-color:rgba(167,139,250,0.6); background:rgba(167,139,250,0.1); }
+  .pipe-step .ps-l { font-size:6px; color:rgba(167,139,250,0.7); font-weight:600; }
+  .pipe-step .ps-v { font-size:7px; color:#e8e8f0; font-weight:700; }
+  .pipe-arr { font-size:8px; color:rgba(167,139,250,0.3); flex-shrink:0; }
+  /* Metrics */
+  .metrics { display:flex; gap:5px; flex:1; }
+  .metric { flex:1; background:rgba(0,0,0,0.4); border:1px solid rgba(167,139,250,0.12); border-radius:5px; padding:4px 6px; display:flex; flex-direction:column; justify-content:center; }
+  .m-l { font-size:6px; color:rgba(255,255,255,0.3); font-weight:600; text-transform:uppercase; letter-spacing:0.06em; }
+  .m-v { font-size:12px; font-weight:700; color:#c4b5fd; }
+  .m-sub { font-size:6px; color:rgba(255,255,255,0.2); }
+  .m-bar-bg { height:2px; background:rgba(255,255,255,0.06); border-radius:1px; margin-top:3px; overflow:hidden; }
+  .m-bar { height:100%; border-radius:1px; background:linear-gradient(90deg,#a78bfa,#c4b5fd); transition:width 0.8s; }
+</style>
+</head>
+<body>
+<div class="scene">
+  <div class="hud">
+    <div class="chip"><div class="chip-l">Research Paper</div><div class="chip-v">Regulatory Divergence · FDA vs EMA</div></div>
+    <div class="chip"><div class="chip-l">Best F1</div><div class="chip-v">0.819</div></div>
+  </div>
+
+  <div class="docs">
+    <div class="doc-panel">
+      <div class="doc-header fda">🇺🇸 FDA Guidance</div>
+      <div class="doc-lines" id="fda-lines"></div>
+      <div class="doc-excerpt" id="fda-text"></div>
+    </div>
+    <div style="display:flex;align-items:center;flex-shrink:0;font-size:14px;color:rgba(167,139,250,0.4)">⇄</div>
+    <div class="doc-panel">
+      <div class="doc-header ema">🇪🇺 EMA Guidance</div>
+      <div class="doc-lines" id="ema-lines"></div>
+      <div class="doc-excerpt" id="ema-text"></div>
+    </div>
+  </div>
+
+  <div class="verdict-row">
+    <div class="verdict-label">Classification</div>
+    <div class="verdict-chips">
+      <div class="v-chip agree" id="v-agree">AGREE</div>
+      <div class="v-chip diverge" id="v-diverge">DIVERGE</div>
+      <div class="v-chip silent" id="v-silent">SILENT</div>
+    </div>
+    <div style="font-size:7px;color:rgba(167,139,250,0.5);flex-shrink:0;width:42px;text-align:right" id="conf"></div>
+  </div>
+
+  <div class="pipeline">
+    <div class="pipe-step" id="ps0"><div class="ps-l">Obligation</div><div class="ps-v">Triplets</div></div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-step" id="ps1"><div class="ps-l">Graph</div><div class="ps-v">RAG</div></div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-step" id="ps2"><div class="ps-l">LLM Judge</div><div class="ps-v">Claude</div></div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-step" id="ps3"><div class="ps-l">Verdict</div><div class="ps-v" id="ps3v">—</div></div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="m-l">Macro-F1</div><div class="m-v">0.819</div><div class="m-sub">LLM Judge (Claude)</div><div class="m-bar-bg"><div class="m-bar" id="b1" style="width:0%"></div></div></div>
+    <div class="metric"><div class="m-l">Graph-RAG</div><div class="m-v">0.698</div><div class="m-sub">+26% vs NLI</div><div class="m-bar-bg"><div class="m-bar" id="b2" style="width:0%"></div></div></div>
+    <div class="metric"><div class="m-l">Pairs</div><div class="m-v">101</div><div class="m-sub">Expert-annotated</div><div class="m-bar-bg"><div class="m-bar" style="width:55%;background:linear-gradient(90deg,#60a5fa,#a78bfa)"></div></div></div>
+    <div class="metric"><div class="m-l">κ Agreement</div><div class="m-v">0.542</div><div class="m-sub">Inter-annotator</div><div class="m-bar-bg"><div class="m-bar" style="width:54%;background:linear-gradient(90deg,#34d399,#60a5fa)"></div></div></div>
+  </div>
+</div>
+
+<script>
+// Build doc line skeletons
+['fda-lines','ema-lines'].forEach(id=>{
+  const el=document.getElementById(id);
+  [70,90,55,80,65].forEach(w=>{
+    const d=document.createElement('div');
+    d.className='doc-line'; d.style.width=w+'%'; el.appendChild(d);
+  });
+});
+
+const CASES = [
+  {
+    fda: '"Primary endpoint: Overall Survival (OS) required for UC approval."',
+    ema: '"Co-primary endpoints: OS and Progression-Free Survival acceptable."',
+    verdict: 'diverge', conf: '94%',
+    fdaHL:[0,1], emaHL:[0,1]
+  },
+  {
+    fda: '"Psychiatric disorders: 6-week minimum treatment duration for Phase III."',
+    ema: '"Phase III studies: minimum 6-week treatment exposure required."',
+    verdict: 'agree', conf: '89%',
+    fdaHL:[1,2], emaHL:[1,2]
+  },
+  {
+    fda: '"Radiopharmaceutical dosimetry reporting: individual organ doses recommended."',
+    ema: '"Radiation protection measures shall follow ALARA principle."',
+    verdict: 'silent', conf: '77%',
+    fdaHL:[0,3], emaHL:[2,4]
+  },
+  {
+    fda: '"Accelerated approval pathway available for UC with unmet medical need."',
+    ema: '"Conditional Marketing Authorization available under exceptional circumstances."',
+    verdict: 'agree', conf: '82%',
+    fdaHL:[0,2], emaHL:[0,2]
+  },
+];
+
+let ci=0, phase=0;
+const steps=['ps0','ps1','ps2','ps3'];
+const verdicts=['v-agree','v-diverge','v-silent'];
+const COLORS={agree:'#34d399',diverge:'#f87171',silent:'#fbbf24'};
+
+function clearActive(){
+  steps.forEach(s=>document.getElementById(s).classList.remove('active'));
+  verdicts.forEach(v=>document.getElementById(v).classList.remove('active'));
+}
+
+function runCase(){
+  const c=CASES[ci%CASES.length]; ci++;
+  clearActive();
+  document.getElementById('fda-text').textContent='';
+  document.getElementById('ema-text').textContent='';
+  document.getElementById('conf').textContent='';
+  document.getElementById('ps3v').textContent='—';
+  // Reset line highlights
+  document.querySelectorAll('.doc-line').forEach(l=>l.classList.remove('highlight'));
+
+  // Step 0 — extract triplets
+  setTimeout(()=>{
+    document.getElementById('ps0').classList.add('active');
+    c.fdaHL.forEach(i=>{ const lines=document.querySelectorAll('#fda-lines .doc-line'); if(lines[i]) lines[i].classList.add('highlight'); });
+    c.emaHL.forEach(i=>{ const lines=document.querySelectorAll('#ema-lines .doc-line'); if(lines[i]) lines[i].classList.add('highlight'); });
+    document.getElementById('fda-text').textContent=c.fda;
+    document.getElementById('ema-text').textContent=c.ema;
+  },400);
+
+  // Step 1 — Graph-RAG
+  setTimeout(()=>{
+    document.getElementById('ps0').classList.remove('active');
+    document.getElementById('ps1').classList.add('active');
+  },1200);
+
+  // Step 2 — LLM Judge
+  setTimeout(()=>{
+    document.getElementById('ps1').classList.remove('active');
+    document.getElementById('ps2').classList.add('active');
+  },2000);
+
+  // Step 3 — Verdict
+  setTimeout(()=>{
+    document.getElementById('ps2').classList.remove('active');
+    document.getElementById('ps3').classList.add('active');
+    const vEl=document.getElementById('v-'+c.verdict);
+    vEl.classList.add('active');
+    document.getElementById('ps3v').textContent=c.verdict.toUpperCase();
+    document.getElementById('ps3v').style.color=COLORS[c.verdict];
+    document.getElementById('conf').textContent=c.conf;
+  },2900);
+
+  setTimeout(runCase, 5200);
+}
+
+// Animate metric bars
+setTimeout(()=>{
+  document.getElementById('b1').style.width='81.9%';
+  document.getElementById('b2').style.width='69.8%';
+},300);
+
+runCase();
+</script>
+</body>
+</html>
