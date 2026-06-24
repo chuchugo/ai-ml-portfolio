@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#080a0e; overflow:hidden; width:100vw; height:100vh; font-family:'Inter',sans-serif; }
+  .scene { position:absolute; inset:0; display:flex; flex-direction:column; padding:8px; gap:6px; }
+  .hud { display:flex; justify-content:space-between; flex-shrink:0; }
+  .chip { background:rgba(0,0,0,0.6); border:1px solid rgba(250,250,250,0.15); border-radius:5px; padding:3px 8px; }
+  .chip-l { font-size:6px; font-weight:700; letter-spacing:0.1em; color:rgba(200,200,200,0.6); text-transform:uppercase; }
+  .chip-v { font-size:10px; font-weight:700; color:#e0e0e0; }
+  .chip-v.green { color:#4ade80; }
+  .query-box { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:6px 10px; flex-shrink:0; }
+  .q-label { font-size:6px; color:rgba(255,255,255,0.35); font-weight:600; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:3px; }
+  .q-text { font-size:9px; color:#e0e0e0; font-style:italic; min-height:14px; }
+  .arrow { text-align:center; font-size:10px; color:rgba(255,255,255,0.2); flex-shrink:0; line-height:1; }
+  .sql-box { background:rgba(0,0,0,0.5); border:1px solid rgba(124,110,230,0.25); border-radius:6px; padding:6px 10px; flex-shrink:0; font-family:monospace; }
+  .sql-label { font-size:6px; color:rgba(124,110,230,0.7); font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:3px; }
+  .sql-text { font-size:8px; color:#c084fc; min-height:28px; white-space:pre; }
+  .results { flex:1; display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; overflow:hidden; }
+  .metric { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:5px; padding:5px 7px; display:flex; flex-direction:column; justify-content:center; }
+  .m-label { font-size:6px; color:rgba(255,255,255,0.35); font-weight:600; text-transform:uppercase; letter-spacing:0.06em; }
+  .m-val { font-size:13px; font-weight:700; color:#e0e0e0; }
+  .m-val.pos { color:#4ade80; }
+  .m-sub { font-size:6px; color:rgba(255,255,255,0.25); }
+  .bar-row { display:flex; align-items:center; gap:4px; margin-top:2px; }
+  .bar-bg { flex:1; height:3px; background:rgba(255,255,255,0.07); border-radius:2px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,#7c6ee6,#4fc8e4); transition:width 0.6s; }
+  .cursor { display:inline-block; width:1px; height:9px; background:#c084fc; animation:blink 0.8s step-end infinite; vertical-align:middle; }
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+</style>
+</head>
+<body>
+<div class="scene">
+  <div class="hud">
+    <div class="chip"><div class="chip-l">Apple · AI Consultant</div><div class="chip-v">NL → SQL</div></div>
+    <div class="chip"><div class="chip-l">Response Time</div><div class="chip-v green" id="latency">3.8s</div></div>
+  </div>
+  <div class="query-box">
+    <div class="q-label">Natural Language Query</div>
+    <div class="q-text" id="nlq"></div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="sql-box">
+    <div class="sql-label">Generated SQL</div>
+    <div class="sql-text" id="sqlt"></div>
+  </div>
+  <div class="results" id="results" style="opacity:0;transition:opacity 0.4s">
+    <div class="metric"><div class="m-label">ROAS</div><div class="m-val pos" id="roas">4.2×</div><div class="bar-row"><div class="bar-bg"><div class="bar-fill" id="b1" style="width:0%"></div></div></div></div>
+    <div class="metric"><div class="m-label">Revenue</div><div class="m-val" id="rev">$3.1M</div><div class="m-sub">100+ campaigns</div></div>
+    <div class="metric"><div class="m-label">Campaigns</div><div class="m-val pos">102</div><div class="bar-row"><div class="bar-bg"><div class="bar-fill" id="b2" style="width:0%"></div></div></div></div>
+  </div>
+</div>
+<script>
+const QUERIES = [
+  {
+    nl: "What's the ROAS for APAC campaigns in Q2 with spend > $50k?",
+    sql: `SELECT campaign_id, region,\n  SUM(revenue)/SUM(spend) AS roas\nFROM campaigns\nWHERE region='APAC'\n  AND quarter='Q2' AND spend>50000\nGROUP BY 1,2`,
+    roas:'4.2×', rev:'$1.8M'
+  },
+  {
+    nl: "Show me top 10 campaigns by ROI this month globally",
+    sql: `SELECT campaign_id, market,\n  (revenue-spend)/spend AS roi\nFROM campaigns\nWHERE month=CURRENT_MONTH()\nORDER BY roi DESC LIMIT 10`,
+    roas:'5.1×', rev:'$3.1M'
+  },
+  {
+    nl: "Compare YoY performance for brand campaigns",
+    sql: `SELECT year, campaign_type,\n  SUM(revenue) AS total_rev,\n  AVG(roas) AS avg_roas\nFROM campaigns\nWHERE type='brand'\nGROUP BY 1,2 ORDER BY 1`,
+    roas:'3.7×', rev:'$2.4M'
+  }
+];
+
+let qi=0, phase='nl', ci=0, timer=null;
+
+function nextQuery(){
+  const q=QUERIES[qi%QUERIES.length]; qi++;
+  phase='nl'; ci=0;
+  document.getElementById('results').style.opacity='0';
+  document.getElementById('sqlt').textContent='';
+  document.getElementById('nlq').textContent='';
+  document.getElementById('b1').style.width='0%';
+  document.getElementById('b2').style.width='0%';
+  typeNL(q);
+}
+
+function typeNL(q){
+  const el=document.getElementById('nlq');
+  const txt=q.nl;
+  let i=0;
+  function step(){
+    if(i<=txt.length){ el.innerHTML=txt.slice(0,i)+'<span class="cursor"></span>'; i++; setTimeout(step,28); }
+    else { setTimeout(()=>typeSQL(q),400); }
+  }
+  step();
+}
+
+function typeSQL(q){
+  const el=document.getElementById('sqlt');
+  const txt=q.sql;
+  let i=0;
+  function step(){
+    if(i<=txt.length){ el.textContent=txt.slice(0,i); i++; setTimeout(step,18); }
+    else { setTimeout(()=>showResults(q),500); }
+  }
+  step();
+}
+
+function showResults(q){
+  document.getElementById('roas').textContent=q.roas;
+  document.getElementById('rev').textContent=q.rev;
+  document.getElementById('results').style.opacity='1';
+  setTimeout(()=>{ document.getElementById('b1').style.width='72%'; document.getElementById('b2').style.width='88%'; },100);
+  setTimeout(nextQuery, 3800);
+}
+
+nextQuery();
+</script>
+</body>
+</html>

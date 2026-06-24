@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#050d0a; overflow:hidden; width:100vw; height:100vh; font-family:'Inter',sans-serif; }
+  canvas { position:absolute; top:0; left:0; width:100%; height:100%; }
+  .hud { position:absolute; top:8px; left:8px; right:8px; display:flex; justify-content:space-between; pointer-events:none; }
+  .chip { background:rgba(0,0,0,0.6); border:1px solid rgba(52,211,153,0.25); border-radius:5px; padding:4px 8px; }
+  .chip-label { font-size:6px; font-weight:700; letter-spacing:0.1em; color:rgba(52,211,153,0.7); text-transform:uppercase; }
+  .chip-val { font-size:10px; font-weight:700; color:#34d399; }
+  .pipeline {
+    position:absolute; bottom:10px; left:8px; right:8px; display:flex; gap:4px; align-items:center; pointer-events:none;
+  }
+  .pipe-step { flex:1; background:rgba(0,0,0,0.55); border:1px solid rgba(52,211,153,0.2); border-radius:4px; padding:3px 4px; text-align:center; }
+  .pipe-step .ps-label { font-size:6px; color:rgba(52,211,153,0.8); font-weight:600; }
+  .pipe-arrow { font-size:8px; color:rgba(52,211,153,0.4); flex:0; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="chip"><div class="chip-label">AO MedTech</div><div class="chip-val">Cochlear Robotics</div></div>
+  <div class="chip"><div class="chip-label">Safety Score</div><div class="chip-val" id="score">99.1%</div></div>
+</div>
+<div class="pipeline">
+  <div class="pipe-step"><div class="ps-label">Sim Data</div></div>
+  <div class="pipe-arrow">→</div>
+  <div class="pipe-step"><div class="ps-label">ML Train</div></div>
+  <div class="pipe-arrow">→</div>
+  <div class="pipe-step"><div class="ps-label">Evaluate</div></div>
+  <div class="pipe-arrow">→</div>
+  <div class="pipe-step"><div class="ps-label">Deploy</div></div>
+  <div class="pipe-arrow">→</div>
+  <div class="pipe-step"><div class="ps-label">Auto-Update</div></div>
+</div>
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+c.width = c.clientWidth||400; c.height = c.clientHeight||240;
+const W=c.width, H=c.height;
+let t=0;
+
+// Soft robot arm: bezier-like segments
+function drawSoftArm(t){
+  const cx=W*0.42, cy=H*0.55;
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // Draw cochlear spiral background
+  ctx.strokeStyle='rgba(52,211,153,0.08)'; ctx.lineWidth=12;
+  ctx.beginPath();
+  for(let a=0;a<Math.PI*3;a+=0.05){
+    const r=15+a*8;
+    const x=r*Math.cos(a), y=r*Math.sin(a)*0.5;
+    if(a===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  ctx.strokeStyle='rgba(52,211,153,0.25)'; ctx.lineWidth=3;
+  ctx.beginPath();
+  for(let a=0;a<Math.PI*3;a+=0.05){
+    const r=15+a*8;
+    const x=r*Math.cos(a), y=r*Math.sin(a)*0.5;
+    if(a===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // Soft actuator arm
+  const segs=8;
+  let ax=0, ay=-20;
+  ctx.lineWidth=6; ctx.lineCap='round';
+  for(let i=0;i<segs;i++){
+    const bend = 12*Math.sin(t*0.8+i*0.6);
+    const nx = ax + 10*Math.cos(t*0.3+i*0.4)+bend*0.3;
+    const ny = ay + 8 + 2*Math.sin(t+i);
+    const alpha = 0.5+0.4*(i/segs);
+    ctx.strokeStyle=`rgba(52,211,153,${alpha})`;
+    ctx.shadowBlur=6; ctx.shadowColor='rgba(52,211,153,0.5)';
+    ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(nx,ny); ctx.stroke();
+    ctx.shadowBlur=0;
+    // Joint circle
+    ctx.fillStyle=`rgba(52,211,153,${alpha})`;
+    ctx.beginPath(); ctx.arc(nx,ny,3,0,Math.PI*2); ctx.fill();
+    ax=nx; ay=ny;
+  }
+  // End effector
+  ctx.fillStyle='rgba(52,211,153,0.9)';
+  ctx.shadowBlur=10; ctx.shadowColor='rgba(52,211,153,0.7)';
+  ctx.beginPath(); ctx.arc(ax,ay,5,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.restore();
+}
+
+// ML metric chart
+const lossData=[];
+for(let i=0;i<50;i++) lossData.push(1.2*Math.exp(-i*0.06)+0.05+Math.random()*0.04);
+
+function drawMetrics(){
+  const mx=W*0.62, my=H*0.18, mw=W*0.32, mh=H*0.38;
+  ctx.fillStyle='rgba(0,0,0,0.4)';
+  ctx.strokeStyle='rgba(52,211,153,0.2)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.roundRect(mx,my,mw,mh,4); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='rgba(52,211,153,0.6)'; ctx.font='6px Inter';
+  ctx.fillText('TRAINING LOSS',mx+4,my+9);
+  // Plot
+  ctx.strokeStyle='rgba(52,211,153,0.8)'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  lossData.forEach((v,i)=>{
+    const px=mx+4+(i/lossData.length)*(mw-8);
+    const py=my+mh-4-(v/1.25)*(mh-14);
+    if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+  });
+  ctx.stroke();
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#050d0a'; ctx.fillRect(0,0,W,H);
+
+  // Subtle grid
+  ctx.strokeStyle='rgba(52,211,153,0.04)'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=25){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=25){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  drawSoftArm(t);
+  drawMetrics();
+
+  // Safety zone ring
+  const sx=W*0.42, sy=H*0.55;
+  const r=45+3*Math.sin(t*2);
+  ctx.strokeStyle=`rgba(52,211,153,${0.1+0.05*Math.sin(t*3)})`;
+  ctx.lineWidth=1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(52,211,153,0.4)'; ctx.font='6px Inter';
+  ctx.fillText('SAFE ZONE',sx-18,sy-r-3);
+
+  t+=0.03;
+  // Update score
+  document.getElementById('score').textContent=(99+0.2*Math.sin(t)).toFixed(1)+'%';
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

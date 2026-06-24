@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0d0d16; overflow:hidden; width:100vw; height:100vh; font-family:'Inter',sans-serif; }
+  canvas { position:absolute; top:0; left:0; }
+  .overlay {
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    pointer-events:none;
+  }
+  .label {
+    font-size:9px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase;
+    color:rgba(124,110,230,0.9); margin-bottom:4px;
+  }
+  .title { font-size:13px; font-weight:700; color:#e8e8f0; text-align:center; }
+  .robot-arm {
+    position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+    display:flex; gap:6px; align-items:flex-end;
+  }
+  .node {
+    width:8px; height:8px; border-radius:50%;
+    background:rgba(124,110,230,0.8);
+    box-shadow:0 0 8px rgba(124,110,230,0.6);
+    animation: nPulse 1.4s ease-in-out infinite;
+  }
+  .node:nth-child(2) { animation-delay:0.2s; height:12px; width:12px; }
+  .node:nth-child(3) { animation-delay:0.4s; }
+  @keyframes nPulse { 0%,100%{opacity:0.4;transform:scale(0.9)} 50%{opacity:1;transform:scale(1.2)} }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="overlay">
+  <div style="text-align:center;margin-top:-30px">
+    <div class="label">NVIDIA Isaac Sim</div>
+    <div class="title">Smart Factory · Physical AI</div>
+  </div>
+</div>
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+c.width = c.offsetWidth || 400;
+c.height = c.offsetHeight || 240;
+const W = c.width, H = c.height;
+
+// Grid
+const particles = [];
+for (let i=0; i<40; i++) {
+  particles.push({
+    x: Math.random()*W, y: Math.random()*H,
+    vx: (Math.random()-0.5)*0.4, vy: (Math.random()-0.5)*0.4,
+    r: Math.random()*2+1
+  });
+}
+
+// Robot arm joints
+const joints = [
+  {x:W/2, y:H-20},
+  {x:W/2+40, y:H-60},
+  {x:W/2+20, y:H-100},
+  {x:W/2-10, y:H-130},
+];
+let t = 0;
+
+function draw() {
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#0d0d16';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(124,110,230,0.06)';
+  ctx.lineWidth=1;
+  for(let x=0;x<W;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // Particle network
+  particles.forEach(p => {
+    p.x+=p.vx; p.y+=p.vy;
+    if(p.x<0||p.x>W) p.vx*=-1;
+    if(p.y<0||p.y>H) p.vy*=-1;
+  });
+  particles.forEach((a,i) => {
+    particles.slice(i+1).forEach(b => {
+      const d = Math.hypot(a.x-b.x,a.y-b.y);
+      if(d<80){
+        ctx.strokeStyle=`rgba(79,200,228,${0.12*(1-d/80)})`;
+        ctx.lineWidth=0.8;
+        ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      }
+    });
+    ctx.fillStyle='rgba(79,200,228,0.5)';
+    ctx.beginPath();ctx.arc(a.x,a.y,a.r,0,Math.PI*2);ctx.fill();
+  });
+
+  // Animated robot arm
+  t+=0.02;
+  const animJoints = [
+    {x:W/2, y:H-20},
+    {x:W/2+40*Math.cos(t*0.7), y:H-55+5*Math.sin(t)},
+    {x:W/2+20*Math.cos(t*0.5+1), y:H-100+8*Math.sin(t*0.8)},
+    {x:W/2-10+15*Math.cos(t*1.2), y:H-135+10*Math.sin(t*1.1)},
+  ];
+
+  // Draw arm segments
+  ctx.lineWidth=3;
+  for(let i=0;i<animJoints.length-1;i++){
+    const grad = ctx.createLinearGradient(animJoints[i].x,animJoints[i].y,animJoints[i+1].x,animJoints[i+1].y);
+    grad.addColorStop(0,'rgba(124,110,230,0.9)');
+    grad.addColorStop(1,'rgba(79,200,228,0.7)');
+    ctx.strokeStyle=grad;
+    ctx.beginPath();
+    ctx.moveTo(animJoints[i].x,animJoints[i].y);
+    ctx.lineTo(animJoints[i+1].x,animJoints[i+1].y);
+    ctx.stroke();
+  }
+  // Draw joints
+  animJoints.forEach((j,i) => {
+    ctx.fillStyle=i===animJoints.length-1?'rgba(79,200,228,0.9)':'rgba(124,110,230,0.9)';
+    ctx.shadowBlur=10; ctx.shadowColor='rgba(124,110,230,0.8)';
+    ctx.beginPath();ctx.arc(j.x,j.y,i===0?6:4,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+  });
+
+  // VLM scan box
+  const bx = animJoints[3].x-20, by = animJoints[3].y-30;
+  ctx.strokeStyle=`rgba(124,110,230,${0.4+0.3*Math.sin(t*3)})`;
+  ctx.lineWidth=1.5;
+  ctx.setLineDash([4,3]);
+  ctx.strokeRect(bx, by, 40, 25);
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(124,110,230,0.6)';
+  ctx.font='6px Inter';
+  ctx.fillText('VLM', bx+12, by-3);
+
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

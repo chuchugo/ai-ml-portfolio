@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0814; overflow:hidden; width:100vw; height:100vh; font-family:'Inter',sans-serif; }
+  canvas { position:absolute; top:0; left:0; width:100%; height:100%; }
+  .hud { position:absolute; top:8px; left:8px; right:8px; display:flex; justify-content:space-between; pointer-events:none; }
+  .chip { background:rgba(0,0,0,0.6); border:1px solid rgba(168,85,247,0.25); border-radius:5px; padding:4px 8px; }
+  .chip-label { font-size:6px; font-weight:700; letter-spacing:0.1em; color:rgba(168,85,247,0.8); text-transform:uppercase; }
+  .chip-val { font-size:10px; font-weight:700; color:#c084fc; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="chip"><div class="chip-label">Biotech</div><div class="chip-val">Drug R&D Agents</div></div>
+  <div class="chip"><div class="chip-label">Compounds Screened</div><div class="chip-val" id="cnt">0</div></div>
+</div>
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+c.width = c.clientWidth||400; c.height = c.clientHeight||240;
+const W=c.width, H=c.height;
+let t=0, cnt=1247;
+
+// Agent nodes
+const AGENTS = [
+  {label:'Search\nAgent', x:0.5, y:0.2, color:'#c084fc'},
+  {label:'Review\nAgent', x:0.22, y:0.55, color:'#a78bfa'},
+  {label:'DocGen\nAgent', x:0.78, y:0.55, color:'#818cf8'},
+  {label:'Synthesis\nAgent', x:0.5, y:0.82, color:'#e879f9'},
+];
+
+const EDGES = [[0,1],[0,2],[1,3],[2,3],[0,3]];
+
+// Flowing packets along edges
+const packets = [];
+EDGES.forEach((e,ei)=>{
+  for(let i=0;i<2;i++) packets.push({edge:ei, pos:Math.random(), speed:0.005+Math.random()*0.008, dir:Math.random()>0.5?1:-1});
+});
+
+// Molecule dots floating
+const mols = Array.from({length:18},()=>({
+  x:Math.random()*W, y:Math.random()*H,
+  vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3,
+  r:1.5+Math.random()*2
+}));
+
+function nodePos(n){ return {x:n.x*W, y:n.y*H}; }
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0a0814'; ctx.fillRect(0,0,W,H);
+
+  // BG dots
+  mols.forEach(m=>{
+    m.x=(m.x+m.vx+W)%W; m.y=(m.y+m.vy+H)%H;
+    ctx.fillStyle='rgba(168,85,247,0.15)';
+    ctx.beginPath(); ctx.arc(m.x,m.y,m.r,0,Math.PI*2); ctx.fill();
+  });
+
+  // Edges
+  EDGES.forEach(([a,b])=>{
+    const p1=nodePos(AGENTS[a]), p2=nodePos(AGENTS[b]);
+    ctx.strokeStyle='rgba(168,85,247,0.15)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
+  });
+
+  // Packets
+  t+=0.016;
+  packets.forEach(pk=>{
+    pk.pos=(pk.pos+pk.speed*pk.dir+1)%1;
+    const [a,b]=EDGES[pk.edge];
+    const p1=nodePos(AGENTS[a]), p2=nodePos(AGENTS[b]);
+    const x=p1.x+(p2.x-p1.x)*pk.pos;
+    const y=p1.y+(p2.y-p1.y)*pk.pos;
+    ctx.fillStyle='rgba(192,132,252,0.9)';
+    ctx.shadowBlur=8; ctx.shadowColor='rgba(192,132,252,0.7)';
+    ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+  });
+
+  // Agent nodes
+  AGENTS.forEach((ag,i)=>{
+    const {x,y}=nodePos(ag);
+    const pulse=1+0.08*Math.sin(t*2+i*1.2);
+    const r=22*pulse;
+    // Glow
+    const grad=ctx.createRadialGradient(x,y,4,x,y,r);
+    grad.addColorStop(0,ag.color+'55'); grad.addColorStop(1,'transparent');
+    ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    // Circle
+    ctx.fillStyle='rgba(10,8,20,0.9)';
+    ctx.strokeStyle=ag.color; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(x,y,18,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    // Label
+    ctx.fillStyle=ag.color; ctx.font='bold 6px Inter'; ctx.textAlign='center';
+    ag.label.split('\n').forEach((line,li)=>{
+      ctx.fillText(line, x, y+(li-0.5)*8);
+    });
+    ctx.textAlign='left';
+  });
+
+  // Doc generation animation (right side)
+  const dx=W*0.04, dy=H*0.15;
+  const lines=[8,6,7,5,6,4];
+  lines.forEach((len,i)=>{
+    const progress=Math.min(1,(t*0.4-i*0.15));
+    if(progress<=0) return;
+    ctx.fillStyle=`rgba(168,85,247,${0.2+0.15*(i%2)})`;
+    ctx.fillRect(dx, dy+i*9, len*progress*5, 5);
+  });
+  ctx.fillStyle='rgba(168,85,247,0.5)'; ctx.font='6px Inter';
+  ctx.fillText('CLINICAL DOC',dx,dy-4);
+
+  cnt = Math.floor(cnt+0.3);
+  document.getElementById('cnt').textContent=cnt.toLocaleString();
+
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

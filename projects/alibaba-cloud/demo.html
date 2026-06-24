@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#060b0a; overflow:hidden; width:100vw; height:100vh; font-family:'Inter',sans-serif; }
+  .scene { position:absolute; inset:0; display:flex; flex-direction:column; padding:8px; gap:5px; }
+  .hud { display:flex; justify-content:space-between; flex-shrink:0; }
+  .chip { background:rgba(0,0,0,0.65); border:1px solid rgba(251,146,60,0.25); border-radius:5px; padding:3px 8px; }
+  .chip-l { font-size:6px; font-weight:700; letter-spacing:0.1em; color:rgba(251,146,60,0.7); text-transform:uppercase; }
+  .chip-v { font-size:10px; font-weight:700; color:#fb923c; }
+  /* K8s node grid */
+  .k8s-panel { flex:1; background:rgba(0,0,0,0.3); border:1px solid rgba(251,146,60,0.12); border-radius:6px; padding:6px; overflow:hidden; }
+  .k8s-label { font-size:6px; color:rgba(251,146,60,0.5); font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:5px; }
+  .nodes-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:3px; }
+  .node-box { aspect-ratio:1; border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:6px; font-weight:700; transition:background 0.3s; }
+  /* ES metrics */
+  .es-panel { background:rgba(0,0,0,0.3); border:1px solid rgba(251,146,60,0.12); border-radius:6px; padding:6px; flex-shrink:0; }
+  .es-label { font-size:6px; color:rgba(251,146,60,0.5); font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px; }
+  .es-metrics { display:flex; gap:5px; }
+  .es-m { flex:1; }
+  .es-m-l { font-size:6px; color:rgba(255,255,255,0.3); }
+  .es-m-v { font-size:10px; font-weight:700; color:#fb923c; }
+  .es-bar-bg { height:3px; background:rgba(255,255,255,0.06); border-radius:2px; margin-top:2px; overflow:hidden; }
+  .es-bar { height:100%; border-radius:2px; background:linear-gradient(90deg,#fb923c,#fbbf24); }
+  /* APM trace */
+  .apm-panel { background:rgba(0,0,0,0.3); border:1px solid rgba(251,146,60,0.12); border-radius:6px; padding:6px; flex-shrink:0; }
+  .apm-label { font-size:6px; color:rgba(251,146,60,0.5); font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px; }
+  .trace-list { display:flex; flex-direction:column; gap:2px; }
+  .trace-row { display:flex; align-items:center; gap:4px; }
+  .trace-svc { font-size:6px; color:rgba(255,255,255,0.4); width:48px; flex-shrink:0; }
+  .trace-bar-bg { flex:1; height:5px; background:rgba(255,255,255,0.05); border-radius:2px; overflow:hidden; }
+  .trace-bar { height:100%; border-radius:2px; }
+  .trace-ms { font-size:6px; color:rgba(255,255,255,0.3); width:24px; text-align:right; flex-shrink:0; }
+</style>
+</head>
+<body>
+<div class="scene">
+  <div class="hud">
+    <div class="chip"><div class="chip-l">Alibaba Cloud · PM</div><div class="chip-v">K8s Observability</div></div>
+    <div class="chip"><div class="chip-l">Cluster Health</div><div class="chip-v" id="health">98.7%</div></div>
+  </div>
+
+  <div class="k8s-panel">
+    <div class="k8s-label">Kubernetes Nodes · Live Status</div>
+    <div class="nodes-grid" id="nodes"></div>
+  </div>
+
+  <div class="es-panel">
+    <div class="es-label">Elasticsearch · Resource Metrics</div>
+    <div class="es-metrics">
+      <div class="es-m"><div class="es-m-l">Indexing Rate</div><div class="es-m-v" id="ir">84k/s</div><div class="es-bar-bg"><div class="es-bar" id="irb" style="width:68%"></div></div></div>
+      <div class="es-m"><div class="es-m-l">Search Latency</div><div class="es-m-v" id="sl">12ms</div><div class="es-bar-bg"><div class="es-bar" id="slb" style="width:22%"></div></div></div>
+      <div class="es-m"><div class="es-m-l">Heap Usage</div><div class="es-m-v" id="hu">61%</div><div class="es-bar-bg"><div class="es-bar" id="hub" style="width:61%"></div></div></div>
+      <div class="es-m"><div class="es-m-l">Shard Count</div><div class="es-m-v">240</div><div class="es-bar-bg"><div class="es-bar" style="width:50%"></div></div></div>
+    </div>
+  </div>
+
+  <div class="apm-panel">
+    <div class="apm-label">APM Distributed Traces</div>
+    <div class="trace-list">
+      <div class="trace-row"><div class="trace-svc">api-gateway</div><div class="trace-bar-bg"><div class="trace-bar" id="t0" style="width:90%;background:#fb923c88"></div></div><div class="trace-ms" id="t0ms">42ms</div></div>
+      <div class="trace-row"><div class="trace-svc">search-svc</div><div class="trace-bar-bg"><div class="trace-bar" id="t1" style="width:55%;background:#fbbf2488"></div></div><div class="trace-ms" id="t1ms">26ms</div></div>
+      <div class="trace-row"><div class="trace-svc">es-client</div><div class="trace-bar-bg"><div class="trace-bar" id="t2" style="width:25%;background:#34d39988"></div></div><div class="trace-ms" id="t2ms">12ms</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Build node grid
+const grid = document.getElementById('nodes');
+const STATUS = ['healthy','healthy','healthy','healthy','healthy','warn','healthy','healthy','healthy','healthy','healthy','healthy','warn','healthy','healthy','healthy','healthy','alert'];
+const COLORS = { healthy:'rgba(52,211,153,0.25)', warn:'rgba(251,191,36,0.35)', alert:'rgba(248,113,113,0.45)' };
+const BORDER = { healthy:'rgba(52,211,153,0.5)', warn:'rgba(251,191,36,0.6)', alert:'rgba(248,113,113,0.7)' };
+const LABEL = { healthy:'●', warn:'▲', alert:'✕' };
+const LCOL = { healthy:'#34d399', warn:'#fbbf24', alert:'#f87171' };
+
+const nodeEls = STATUS.map((s,i)=>{
+  const d=document.createElement('div');
+  d.className='node-box';
+  d.style.background=COLORS[s]; d.style.border=`1px solid ${BORDER[s]}`;
+  d.style.color=LCOL[s]; d.textContent=LABEL[s];
+  grid.appendChild(d); return {el:d, base:s};
+});
+
+let t=0;
+function tick(){
+  t+=0.025;
+  // Animate some nodes
+  nodeEls.forEach((n,i)=>{
+    if(i===5||i===12){
+      const flicker=Math.sin(t*3+i)>0.3;
+      const s=flicker?'warn':'healthy';
+      n.el.style.background=COLORS[s]; n.el.style.borderColor=BORDER[s];
+      n.el.style.color=LCOL[s]; n.el.textContent=LABEL[s];
+    }
+  });
+  // ES metrics
+  const ir=Math.floor(80+8*Math.sin(t*0.7));
+  document.getElementById('ir').textContent=ir+'k/s';
+  document.getElementById('irb').style.width=Math.floor(ir/120*100)+'%';
+  const sl=Math.floor(10+4*Math.abs(Math.sin(t*1.1)));
+  document.getElementById('sl').textContent=sl+'ms';
+  document.getElementById('slb').style.width=Math.floor(sl/50*100)+'%';
+  const hu=Math.floor(58+6*Math.sin(t*0.5));
+  document.getElementById('hu').textContent=hu+'%';
+  document.getElementById('hub').style.width=hu+'%';
+  // APM traces
+  const t0=Math.floor(38+8*Math.sin(t*1.3));
+  const t1=Math.floor(22+6*Math.sin(t*0.9));
+  const t2=Math.floor(10+3*Math.sin(t*1.7));
+  document.getElementById('t0ms').textContent=t0+'ms';
+  document.getElementById('t1ms').textContent=t1+'ms';
+  document.getElementById('t2ms').textContent=t2+'ms';
+  document.getElementById('t0').style.width=Math.min(95,t0*1.8)+'%';
+  document.getElementById('t1').style.width=Math.min(95,t1*2.2)+'%';
+  document.getElementById('t2').style.width=Math.min(95,t2*3.5)+'%';
+  document.getElementById('health').textContent=(98+0.5*Math.sin(t*0.4)).toFixed(1)+'%';
+  requestAnimationFrame(tick);
+}
+tick();
+</script>
+</body>
+</html>

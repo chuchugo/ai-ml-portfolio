@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#06090f; overflow:hidden; width:100vw; height:100vh; font-family:'Inter',sans-serif; }
+  .scene { position:absolute; inset:0; display:flex; flex-direction:column; padding:10px; gap:6px; }
+  .hud { display:flex; justify-content:space-between; }
+  .chip { background:rgba(0,0,0,0.6); border:1px solid rgba(56,189,248,0.25); border-radius:5px; padding:3px 8px; }
+  .chip-label { font-size:6px; font-weight:700; letter-spacing:0.1em; color:rgba(56,189,248,0.7); text-transform:uppercase; }
+  .chip-val { font-size:10px; font-weight:700; color:#38bdf8; }
+  .chat-area { flex:1; display:flex; flex-direction:column; gap:5px; justify-content:flex-end; overflow:hidden; }
+  .msg { display:flex; gap:5px; align-items:flex-end; animation: fadeIn 0.3s ease; }
+  .msg.user { flex-direction:row-reverse; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+  .avatar { width:16px; height:16px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:7px; }
+  .avatar.bot { background:rgba(56,189,248,0.2); border:1px solid rgba(56,189,248,0.4); color:#38bdf8; }
+  .avatar.usr { background:rgba(124,110,230,0.2); border:1px solid rgba(124,110,230,0.4); color:#7c6ee6; }
+  .bubble { max-width:72%; padding:5px 8px; border-radius:8px; font-size:8px; line-height:1.5; }
+  .bubble.bot { background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.18); color:#b0e8ff; border-bottom-left-radius:2px; }
+  .bubble.usr { background:rgba(124,110,230,0.12); border:1px solid rgba(124,110,230,0.2); color:#d4ccff; border-bottom-right-radius:2px; }
+  .rag-bar { background:rgba(0,0,0,0.5); border:1px solid rgba(56,189,248,0.15); border-radius:5px; padding:5px 8px; }
+  .rag-label { font-size:6px; font-weight:700; letter-spacing:0.1em; color:rgba(56,189,248,0.6); text-transform:uppercase; margin-bottom:3px; }
+  .rag-sources { display:flex; gap:4px; }
+  .rag-src { background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.2); border-radius:3px; padding:2px 5px; font-size:6px; color:rgba(56,189,248,0.8); }
+  .rag-src.active { background:rgba(56,189,248,0.2); border-color:rgba(56,189,248,0.5); color:#38bdf8; }
+  .typing { display:flex; gap:3px; align-items:center; padding:5px 8px; }
+  .dot { width:4px; height:4px; border-radius:50%; background:#38bdf8; opacity:0.4; animation:blink 1.2s ease-in-out infinite; }
+  .dot:nth-child(2){animation-delay:0.2s} .dot:nth-child(3){animation-delay:0.4s}
+  @keyframes blink{0%,100%{opacity:0.2}50%{opacity:0.9}}
+</style>
+</head>
+<body>
+<div class="scene">
+  <div class="hud">
+    <div class="chip"><div class="chip-label">Precision Growth</div><div class="chip-val">Rx Insights AI</div></div>
+    <div class="chip"><div class="chip-label">RAG Sources</div><div class="chip-val">FDA · PubMed · EMR</div></div>
+  </div>
+  <div class="rag-bar">
+    <div class="rag-label">Retrieval Context</div>
+    <div class="rag-sources">
+      <div class="rag-src active" id="src0">FDA Guidelines</div>
+      <div class="rag-src" id="src1">PubMed (2024)</div>
+      <div class="rag-src" id="src2">Drug Interactions DB</div>
+      <div class="rag-src" id="src3">Clinical Trials</div>
+    </div>
+  </div>
+  <div class="chat-area" id="chat"></div>
+</div>
+<script>
+const CONV = [
+  {role:'user', text:'What are the contraindications for metformin in elderly patients?'},
+  {role:'bot',  text:'Based on FDA guidelines and recent PubMed literature: Metformin is contraindicated in patients with eGFR < 30. For ages 65+, monitor renal function every 3–6 months. Recent evidence (2024) suggests dose adjustment at eGFR < 45.', sources:[0,1,2]},
+  {role:'user', text:'Are there safer alternatives for Type 2 diabetes in CKD stage 3b?'},
+  {role:'bot',  text:'SGLT2 inhibitors (empagliflozin) show renoprotective benefits. GLP-1 agonists (semaglutide) are preferred per 2024 ADA standards. Recommend specialist consult for eGFR 30–44 range.', sources:[1,3]},
+  {role:'user', text:'Check interaction with lisinopril'},
+  {role:'bot',  text:'Low interaction risk. Both are renoprotective in diabetic nephropathy. Monitor potassium levels — mild hyperkalemia risk when combined with ACE inhibitors.', sources:[2]},
+];
+
+const chat = document.getElementById('chat');
+let ci = 0;
+
+function addMsg(msg){
+  const div=document.createElement('div');
+  div.className=`msg ${msg.role==='user'?'user':''}`;
+  div.innerHTML=`<div class="avatar ${msg.role==='user'?'usr':'bot'}">${msg.role==='user'?'MD':'AI'}</div>
+    <div class="bubble ${msg.role==='user'?'usr':'bot'}">${msg.text}</div>`;
+  chat.appendChild(div);
+  // Keep only last 6 messages visible
+  while(chat.children.length>8) chat.removeChild(chat.firstChild);
+}
+
+function highlightSources(idxs){
+  [0,1,2,3].forEach(i=>document.getElementById('src'+i).className='rag-src');
+  (idxs||[]).forEach(i=>document.getElementById('src'+i).className='rag-src active');
+}
+
+function showTyping(){
+  const d=document.createElement('div');
+  d.className='msg'; d.id='typing';
+  d.innerHTML=`<div class="avatar bot">AI</div><div class="bubble bot"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  chat.appendChild(d);
+}
+
+function removeTyping(){ const el=document.getElementById('typing'); if(el) el.remove(); }
+
+let idx=0;
+function step(){
+  const msg=CONV[idx%CONV.length];
+  if(msg.role==='bot'){
+    showTyping();
+    setTimeout(()=>{ removeTyping(); addMsg(msg); highlightSources(msg.sources); idx++; setTimeout(step,3200); },1400);
+  } else {
+    addMsg(msg); highlightSources([]); idx++;
+    setTimeout(step,1800);
+  }
+}
+setTimeout(step,600);
+</script>
+</body>
+</html>
