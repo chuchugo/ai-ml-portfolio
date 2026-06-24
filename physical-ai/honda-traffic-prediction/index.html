@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Traffic Flow Prediction — Chuchu Wu</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#0a0a0f;--surface:#111118;--surface2:#1a1a25;--border:rgba(255,255,255,0.07);--accent:#7c6ee6;--accent2:#4fc8e4;--text:#e8e8f0;--muted:#7a7a9a}
+    body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;line-height:1.6}
+    nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:.9rem 2rem;background:rgba(10,10,15,0.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+    .nav-back{color:var(--muted);text-decoration:none;font-size:.85rem;display:flex;align-items:center;gap:.4rem;transition:color .2s}.nav-back:hover{color:var(--text)}
+    .nav-logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .hero-demo{width:100%;height:420px;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
+    .hero-demo iframe{width:100%;height:100%;border:none}
+    .hero-demo-overlay{position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,var(--bg));pointer-events:none}
+    .container{max-width:860px;margin:0 auto;padding:3rem 2rem}
+    .org-tag{display:inline-flex;align-items:center;gap:.4rem;background:rgba(79,200,228,.1);border:1px solid rgba(79,200,228,.25);border-radius:100px;padding:.25rem .8rem;font-size:.75rem;color:var(--accent2);font-weight:600;margin-bottom:1rem}
+    h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(1.8rem,4vw,2.6rem);font-weight:700;margin-bottom:1rem;line-height:1.15}
+    .lead{font-size:1.05rem;color:var(--muted);margin-bottom:2rem;line-height:1.75}
+    .impact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:2.5rem}
+    .impact-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem}
+    .impact-num{font-family:'Space Grotesk',sans-serif;font-size:1.5rem;font-weight:700;color:var(--accent2)}
+    .impact-label{font-size:.78rem;color:var(--muted);margin-top:.2rem}
+    h2{font-family:'Space Grotesk',sans-serif;font-size:1.25rem;font-weight:700;margin:2.5rem 0 1rem;padding-top:1rem;border-top:1px solid var(--border)}
+    p{color:var(--muted);margin-bottom:1rem;line-height:1.75}
+    .arch-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.2rem;margin:1rem 0;font-family:monospace;font-size:.8rem;color:#a0a0c0;white-space:pre;overflow-x:auto}
+    .tag-row{display:flex;flex-wrap:wrap;gap:.5rem;margin:.5rem 0 1.5rem}
+    .tag{background:rgba(124,110,230,.1);border:1px solid rgba(124,110,230,.2);color:var(--accent);border-radius:6px;padding:.25rem .65rem;font-size:.78rem;font-weight:500}
+    table{width:100%;border-collapse:collapse;margin:.5rem 0 1.5rem;font-size:.85rem}
+    th{text-align:left;padding:.5rem .75rem;color:var(--muted);font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border)}
+    td{padding:.6rem .75rem;color:var(--muted);border-bottom:1px solid rgba(255,255,255,.04)}
+    td:first-child{color:var(--text);font-weight:500}
+    .btn-row{display:flex;gap:1rem;flex-wrap:wrap;margin-top:2.5rem;padding-top:2rem;border-top:1px solid var(--border)}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.4rem;border-radius:8px;font-size:.88rem;font-weight:600;text-decoration:none;transition:all .2s}
+    .btn-primary{background:linear-gradient(135deg,var(--accent),#6a5cd4);color:#fff}
+    .btn-primary:hover{opacity:.88;transform:translateY(-1px)}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+    .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+  </style>
+</head>
+<body>
+<nav>
+  <a href="../../index.html" class="nav-back">← Portfolio</a>
+  <div class="nav-logo">CHUCHU WU</div>
+  <a href="https://github.com/chuchugo/ai-ml-portfolio" target="_blank" style="color:var(--muted);font-size:.85rem;text-decoration:none">GitHub ↗</a>
+</nav>
+
+<div class="hero-demo">
+  <iframe src="../../projects/honda-traffic/demo.html" title="Traffic Flow Demo"></iframe>
+  <div class="hero-demo-overlay"></div>
+</div>
+
+<div class="container">
+  <div class="org-tag">CMU Mobility Data Analytics Center × Honda R&D Lab</div>
+  <h1>Smart-City Traffic Flow Prediction</h1>
+  <p class="lead">Built a traffic flow prediction system on GCP Vertex AI integrating GIS road data, socioeconomic factors, and telematics from ~4M vehicles sampled at 0.5s intervals. Deployed real-time monitoring with Django + Mapbox for the Columbus smart-city initiative.</p>
+
+  <div class="impact-grid">
+    <div class="impact-card"><div class="impact-num">85%</div><div class="impact-label">Prediction accuracy</div></div>
+    <div class="impact-card"><div class="impact-num">~4M</div><div class="impact-label">Vehicles sampled</div></div>
+    <div class="impact-card"><div class="impact-num">0.5s</div><div class="impact-label">Sensor sample interval</div></div>
+    <div class="impact-card"><div class="impact-num">Columbus</div><div class="impact-label">Smart-city deployment</div></div>
+  </div>
+
+  <div class="tag-row">
+    <span class="tag">GCP Vertex AI</span><span class="tag">Graph Neural Networks</span><span class="tag">MLflow</span>
+    <span class="tag">Django</span><span class="tag">Mapbox</span><span class="tag">GIS Data</span><span class="tag">Telematics</span>
+  </div>
+
+  <h2>Overview</h2>
+  <p>Urban traffic management relies on lagging indicators and static models. Vehicle-embedded sensors offer a dense, real-time signal that — when processed correctly — predicts congestion 10–20 minutes ahead of occurrence. This system was built in collaboration with Honda R&D Lab and deployed as part of Columbus, Ohio's smart-city initiative.</p>
+
+  <h2>Data Pipeline</h2>
+  <div class="arch-box">Vehicle Sensors (~4M vehicles, 0.5s intervals)
+        │
+        ▼
+Feature Engineering
+  ├── GIS road network graph
+  ├── Socioeconomic zone factors
+  ├── Historical flow patterns
+  └── Real-time telematics streams
+        │
+        ▼
+Temporal Fusion Transformer + Graph Neural Network
+        │
+        ▼
+Traffic Flow Forecast (5 / 10 / 20 min horizons)
+        │
+        ▼
+Django + Mapbox Real-Time Monitoring Dashboard</div>
+
+  <h2>Tech Stack</h2>
+  <table>
+    <tr><th>Layer</th><th>Technology</th></tr>
+    <tr><td>ML Platform</td><td>GCP Vertex AI — training, serving, monitoring</td></tr>
+    <tr><td>Model</td><td>Temporal Fusion Transformer + GNN for spatial-temporal modeling</td></tr>
+    <tr><td>Experiment Tracking</td><td>MLflow — run comparison, model registry</td></tr>
+    <tr><td>Visualization</td><td>Django + Mapbox — real-time city-scale traffic heatmap</td></tr>
+    <tr><td>Data Sources</td><td>Vehicle telematics · GIS road data · Census socioeconomic data</td></tr>
+  </table>
+
+  <h2>Key Results</h2>
+  <p>Achieved 85% accuracy on 10-minute traffic flow prediction horizons. The real-time monitoring dashboard was adopted by the Columbus smart-city operations team. Processing ~4 million vehicle telemetry streams at 0.5-second sampling intervals required careful batching and streaming architecture on GCP Dataflow before feeding the prediction model.</p>
+
+  <div class="btn-row">
+    <a href="../../index.html#experience" class="btn btn-primary">← Back to Portfolio</a>
+    <a href="https://github.com/chuchugo/ai-ml-portfolio/tree/main/physical-ai/honda-traffic-prediction" target="_blank" class="btn btn-ghost">View on GitHub ↗</a>
+  </div>
+</div>
+</body>
+</html>
