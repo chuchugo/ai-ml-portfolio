@@ -53,4 +53,4 @@ User interviews      ──►  PRD + Wireframes  ──►   Engineering
 
 ## Demo
 
-*Animated K8s node health grid + Elasticsearch metrics + APM trace waterfall on the [portfolio site](https://chuchuwu.github.io/ai-ml-portfolio).*
+*Animated K8s node health grid + Elasticsearch metrics + APM trace waterfall on the [portfolio site](https://chuchugo.github.io/ai-ml-portfolio).*

@@ -4,7 +4,7 @@
 
 **$100M+ revenue impact · 8 production AI systems · SF Bay Area / Remote**
 
-📄 [Portfolio Site](https://chuchuwu.github.io/ai-ml-portfolio) · [LinkedIn](https://linkedin.com/in/chuchuwu) · [Medium](https://medium.com/@chuchuwu)
+📄 [Portfolio Site](https://chuchugo.github.io/ai-ml-portfolio) · [LinkedIn](https://linkedin.com/in/chuchugo) · [Medium](https://medium.com/@chuchugo)
 
 ---
 

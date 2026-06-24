@@ -72,4 +72,4 @@ Behavioral Event Stream (Petabyte/day)
 
 ## Demo
 
-*Animated user segmentation clustering visualization on the [portfolio site](https://chuchuwu.github.io/ai-ml-portfolio).*
+*Animated user segmentation clustering visualization on the [portfolio site](https://chuchugo.github.io/ai-ml-portfolio).*

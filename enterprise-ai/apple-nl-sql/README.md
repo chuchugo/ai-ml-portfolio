@@ -73,4 +73,4 @@ Apple's data warehouse spans hundreds of tables. Used RAG-based schema retrieval
 
 ## Demo
 
-*Animated NL → SQL → results flow on the [portfolio site](https://chuchuwu.github.io/ai-ml-portfolio).*
+*Animated NL → SQL → results flow on the [portfolio site](https://chuchugo.github.io/ai-ml-portfolio).*
