@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#050a08; overflow:hidden; width:100vw; height:100vh; font-family:'Inter',sans-serif; }
+  canvas { position:absolute; top:0; left:0; width:100%; height:100%; }
+  .hud { position:absolute; top:8px; left:8px; right:8px; display:flex; justify-content:space-between; pointer-events:none; }
+  .chip { background:rgba(0,0,0,0.7); border:1px solid rgba(74,222,128,0.3); border-radius:5px; padding:3px 8px; }
+  .chip-l { font-size:6px; font-weight:700; letter-spacing:0.1em; color:rgba(74,222,128,0.7); text-transform:uppercase; }
+  .chip-v { font-size:9px; font-weight:700; color:#4ade80; }
+  .trophy { position:absolute; top:8px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.7); border:1px solid rgba(251,191,36,0.5); border-radius:20px; padding:3px 12px; font-size:8px; color:#fbbf24; font-weight:700; letter-spacing:0.05em; white-space:nowrap; }
+  .bottom { position:absolute; bottom:8px; left:8px; right:8px; display:flex; gap:5px; pointer-events:none; }
+  .step { flex:1; background:rgba(0,0,0,0.6); border:1px solid rgba(74,222,128,0.15); border-radius:5px; padding:4px 5px; text-align:center; transition:border-color .3s,background .3s; }
+  .step.active { border-color:rgba(74,222,128,0.6); background:rgba(74,222,128,0.08); }
+  .step-l { font-size:5.5px; color:rgba(74,222,128,0.6); font-weight:600; text-transform:uppercase; letter-spacing:.06em; }
+  .step-v { font-size:7px; color:#e8e8f0; font-weight:700; margin-top:1px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="chip"><div class="chip-l">Fast Loop · SmolVLA + LoRA</div><div class="chip-v">Self-Improving Robotics</div></div>
+  <div class="chip"><div class="chip-l">Iteration</div><div class="chip-v" id="iter">0</div></div>
+</div>
+<div class="trophy">🏆 TOP WINNER · NVIDIA × Nebius × Antioch × Toloka Hackathon</div>
+<div class="bottom">
+  <div class="step" id="s0"><div class="step-l">3D Scene</div><div class="step-v">Editor</div></div>
+  <div class="step" id="s1"><div class="step-l">Motion</div><div class="step-v">Profile</div></div>
+  <div class="step" id="s2"><div class="step-l">SmolVLA</div><div class="step-v">Training</div></div>
+  <div class="step" id="s3"><div class="step-l">Claude Opus</div><div class="step-v">Teacher</div></div>
+  <div class="step" id="s4"><div class="step-l">LoRA</div><div class="step-v">Fine-tune</div></div>
+  <div class="step" id="s5"><div class="step-l">Eval</div><div class="step-v">↻ Loop</div></div>
+</div>
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+c.width = c.clientWidth||400; c.height = c.clientHeight||240;
+const W=c.width, H=c.height;
+let t=0, iter=0, loopPhase=0;
+
+// Robot arm joints
+const BASE = {x:W*0.4, y:H*0.72};
+let arm = [{x:0,y:0},{x:40,y:-50},{x:30,y:-90},{x:10,y:-120}];
+
+// Object on table
+let obj = {x:W*0.58, y:H*0.65, grabbed:false};
+let target = {x:W*0.28, y:H*0.58};
+
+// Trajectory points (planned path)
+const trajPoints = [];
+for(let i=0;i<20;i++){
+  trajPoints.push({
+    x: W*0.58 + (W*0.28-W*0.58)*(i/19),
+    y: H*0.65 - Math.sin(i/19*Math.PI)*30
+  });
+}
+
+// Particles for "improvement" feedback
+const particles = [];
+
+// Loss curve data
+const lossHistory = [1.8,1.6,1.4,1.2,1.0,0.85,0.72,0.61,0.53,0.46,0.41,0.37];
+
+function drawGrid(){
+  ctx.strokeStyle='rgba(74,222,128,0.04)'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=25){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=25){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+}
+
+function drawTable(){
+  ctx.fillStyle='rgba(74,222,128,0.06)';
+  ctx.fillRect(W*0.18, H*0.68, W*0.55, 4);
+  ctx.fillStyle='rgba(74,222,128,0.03)';
+  ctx.fillRect(W*0.18, H*0.68, W*0.55, H*0.3);
+}
+
+function drawTrajectory(){
+  // Planned trajectory
+  ctx.strokeStyle='rgba(74,222,128,0.2)'; ctx.lineWidth=1; ctx.setLineDash([3,4]);
+  ctx.beginPath();
+  trajPoints.forEach((p,i)=>{ if(i===0)ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
+  ctx.stroke(); ctx.setLineDash([]);
+  // Target marker
+  ctx.strokeStyle='rgba(74,222,128,0.5)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(target.x,target.y,8,0,Math.PI*2); ctx.stroke();
+  ctx.fillStyle='rgba(74,222,128,0.3)';
+  ctx.beginPath(); ctx.arc(target.x,target.y,4,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(74,222,128,0.5)'; ctx.font='6px Inter'; ctx.textAlign='center';
+  ctx.fillText('TARGET',target.x,target.y-12); ctx.textAlign='left';
+}
+
+function drawArm(tt){
+  const progress=(Math.sin(tt*0.6)+1)/2;
+  const joints=[
+    {x:BASE.x, y:BASE.y},
+    {x:BASE.x+arm[1].x*Math.cos(tt*0.3), y:BASE.y+arm[1].y+5*Math.sin(tt*0.5)},
+    {x:BASE.x+arm[2].x*Math.cos(tt*0.4+0.5), y:BASE.y+arm[2].y+8*Math.sin(tt*0.4)},
+  ];
+  // Interpolate end effector toward object then toward target
+  const ex=BASE.x+arm[3].x+(obj.x-BASE.x-arm[3].x)*progress;
+  const ey=BASE.y+arm[3].y+(obj.y-BASE.y-arm[3].y)*progress;
+  joints.push({x:ex,y:ey});
+
+  // Segments
+  for(let i=0;i<joints.length-1;i++){
+    const g=ctx.createLinearGradient(joints[i].x,joints[i].y,joints[i+1].x,joints[i+1].y);
+    g.addColorStop(0,'rgba(74,222,128,0.9)'); g.addColorStop(1,'rgba(52,211,153,0.6)');
+    ctx.strokeStyle=g; ctx.lineWidth=3; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(joints[i].x,joints[i].y); ctx.lineTo(joints[i+1].x,joints[i+1].y); ctx.stroke();
+  }
+  joints.forEach((j,i)=>{
+    ctx.fillStyle=i===joints.length-1?'rgba(74,222,128,1)':'rgba(52,211,153,0.8)';
+    ctx.shadowBlur=8; ctx.shadowColor='rgba(74,222,128,0.6)';
+    ctx.beginPath(); ctx.arc(j.x,j.y,i===0?6:3.5,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+  });
+  return joints[joints.length-1];
+}
+
+function drawObject(ee){
+  const d=Math.hypot(ee.x-obj.x,ee.y-obj.y);
+  const grabbed=d<14;
+  const ox = grabbed ? ee.x : obj.x;
+  const oy = grabbed ? ee.y+6 : obj.y;
+  ctx.fillStyle=grabbed?'rgba(74,222,128,0.7)':'rgba(74,222,128,0.35)';
+  ctx.strokeStyle=grabbed?'rgba(74,222,128,1)':'rgba(74,222,128,0.6)';
+  ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.roundRect(ox-8,oy-8,16,16,3); ctx.fill(); ctx.stroke();
+  if(grabbed){
+    ctx.strokeStyle='rgba(74,222,128,0.4)'; ctx.lineWidth=1; ctx.setLineDash([2,3]);
+    ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(target.x,target.y); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function drawLossChart(){
+  const cx=W*0.66, cy=H*0.2, cw=W*0.28, ch=H*0.25;
+  ctx.fillStyle='rgba(0,0,0,0.45)';
+  ctx.strokeStyle='rgba(74,222,128,0.2)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.roundRect(cx,cy,cw,ch,4); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='rgba(74,222,128,0.5)'; ctx.font='6px Inter';
+  ctx.fillText('TRAINING LOSS',cx+4,cy+9);
+  const n=Math.min(lossHistory.length, Math.floor(t*0.8)+2);
+  ctx.strokeStyle='rgba(74,222,128,0.8)'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  for(let i=0;i<n;i++){
+    const px=cx+4+(i/(lossHistory.length-1))*(cw-8);
+    const py=cy+ch-4-(lossHistory[i]/2)*(ch-14);
+    if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+  }
+  ctx.stroke();
+  // Current point
+  if(n>0){
+    const lx=cx+4+((n-1)/(lossHistory.length-1))*(cw-8);
+    const ly=cy+ch-4-(lossHistory[n-1]/2)*(ch-14);
+    ctx.fillStyle='rgba(74,222,128,1)';
+    ctx.beginPath(); ctx.arc(lx,ly,3,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(74,222,128,0.7)'; ctx.font='6px Inter';
+    ctx.fillText(lossHistory[n-1].toFixed(2),lx+4,ly-2);
+  }
+}
+
+function spawnParticle(x,y){
+  for(let i=0;i<3;i++){
+    particles.push({
+      x,y,vx:(Math.random()-0.5)*2,vy:-Math.random()*2-1,
+      life:1,color:'rgba(74,222,128,'
+    });
+  }
+}
+
+function drawParticles(){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx; p.y+=p.vy; p.life-=0.04;
+    if(p.life<=0){particles.splice(i,1);continue;}
+    ctx.fillStyle=p.color+p.life+')';
+    ctx.beginPath(); ctx.arc(p.x,p.y,2,0,Math.PI*2); ctx.fill();
+  }
+}
+
+// Cycle pipeline steps
+const steps=['s0','s1','s2','s3','s4','s5'];
+let activeStep=0;
+setInterval(()=>{
+  steps.forEach(s=>document.getElementById(s).classList.remove('active'));
+  document.getElementById(steps[activeStep]).classList.add('active');
+  activeStep=(activeStep+1)%steps.length;
+  if(activeStep===0){ iter++; document.getElementById('iter').textContent=iter; spawnParticle(W*0.4,H*0.5); }
+},800);
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#050a08'; ctx.fillRect(0,0,W,H);
+  drawGrid();
+  drawTable();
+  drawTrajectory();
+  const ee=drawArm(t);
+  drawObject(ee);
+  drawLossChart();
+  drawParticles();
+  // Claude teacher label
+  ctx.fillStyle='rgba(74,222,128,0.4)'; ctx.font='6px Inter';
+  ctx.fillText('CLAUDE OPUS · Expert Teacher',W*0.66,H*0.48);
+  ctx.fillStyle='rgba(74,222,128,0.2)'; ctx.font='6px Inter';
+  ctx.fillText('SmolVLA + LoRA · Self-Improving Loop',W*0.66,H*0.52);
+  t+=0.025;
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
