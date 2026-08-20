@@ -1,0 +1,114 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#09070f;overflow:hidden;width:100vw;height:100vh;font-family:'Inter',sans-serif}
+canvas{position:absolute;top:0;left:0}
+.ui{position:absolute;inset:0;padding:8px;display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.hud{display:flex;justify-content:space-between}
+.chip{background:rgba(0,0,0,.7);border:1px solid rgba(167,139,250,.3);border-radius:5px;padding:3px 8px}
+.chip-l{font-size:6px;font-weight:700;letter-spacing:.1em;color:rgba(167,139,250,.7);text-transform:uppercase}
+.chip-v{font-size:9px;font-weight:700;color:#c4b5fd}
+.legend{display:flex;gap:8px;justify-content:center;flex-shrink:0}
+.leg{display:flex;align-items:center;gap:3px;font-size:6px;color:rgba(255,255,255,.4)}
+.leg-dot{width:8px;height:3px;border-radius:1px}
+.canvas-area{flex:1;position:relative}
+.bottom{display:flex;gap:5px;flex-shrink:0}
+.stat-box{flex:1;background:rgba(0,0,0,.5);border:1px solid rgba(167,139,250,.15);border-radius:5px;padding:4px 6px;text-align:center}
+.stat-l{font-size:5.5px;color:rgba(167,139,250,.5);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.stat-v{font-size:9px;font-weight:700;color:#c4b5fd}
+</style></head><body>
+<canvas id="c"></canvas>
+<div class="ui">
+  <div class="hud">
+    <div class="chip"><div class="chip-l">J-Habit · BlackboxNLP 2026</div><div class="chip-v">Monitor Leverage vs Training</div></div>
+    <div class="chip"><div class="chip-l">Collapse</div><div class="chip-v">~100×</div></div>
+  </div>
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:#a78bfa"></div>Behavioral leverage</div>
+    <div class="leg"><div class="leg-dot" style="background:#60a5fa"></div>Logit influence</div>
+    <div class="leg"><div class="leg-dot" style="background:#4ade80"></div>Task success</div>
+  </div>
+  <div class="bottom">
+    <div class="stat-box"><div class="stat-l">Leverage collapse</div><div class="stat-v">~100×</div></div>
+    <div class="stat-box"><div class="stat-l">Logit influence</div><div class="stat-v">persists</div></div>
+    <div class="stat-box"><div class="stat-l">Models</div><div class="stat-v">Qwen+Gemma 4B</div></div>
+    <div class="stat-box"><div class="stat-l">Divergence</div><div class="stat-v">Behavioral ≠ Causal</div></div>
+  </div>
+</div>
+<script>
+const c=document.getElementById('c');
+const ctx=c.getContext('2d');
+c.width=c.clientWidth||400;c.height=c.clientHeight||240;
+const W=c.width,H=c.height;
+
+// Curves over training checkpoints (0..1 = acquisition → saturation)
+const N=60;
+function sigmoid(x,mid,steep){return 1/(1+Math.exp(-steep*(x-mid)))}
+
+const xs=Array.from({length:N},(_,i)=>i/(N-1));
+// Task success: rises from ~0.3 to ~0.95
+const taskSuccess=xs.map(x=>0.3+0.65*sigmoid(x,0.4,8));
+// Behavioral leverage: starts high, collapses ~2 orders
+const behavLev=xs.map(x=>Math.max(0.01,1.0-sigmoid(x,0.5,7)*0.99));
+// Logit influence: stays high with slight dip
+const logitInfl=xs.map(x=>0.85-0.2*sigmoid(x,0.6,5)+0.05*Math.sin(x*6));
+
+let t=0;
+function drawBg(){
+  ctx.fillStyle='#09070f';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(167,139,250,0.04)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+}
+
+const PAD={l:36,r:8,t:24,b:24};
+function toScreen(xi,yi,ymin=0,ymax=1){
+  const px=PAD.l+(xi/1)*(W-PAD.l-PAD.r);
+  const py=(H-PAD.b)-(yi-ymin)/(ymax-ymin)*(H-PAD.t-PAD.b);
+  return[px,py];
+}
+
+function drawCurve(data,color,progress){
+  const n=Math.floor(progress*N);
+  if(n<2)return;
+  ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.beginPath();
+  data.slice(0,n).forEach((y,i)=>{
+    const[px,py]=toScreen(xs[i],y);
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  });
+  ctx.stroke();
+  // Dot at current
+  const[dx,dy]=toScreen(xs[n-1],data[n-1]);
+  ctx.fillStyle=color;ctx.shadowBlur=6;ctx.shadowColor=color;
+  ctx.beginPath();ctx.arc(dx,dy,3,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+}
+
+function drawAxes(){
+  ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(PAD.l,PAD.t);ctx.lineTo(PAD.l,H-PAD.b);ctx.lineTo(W-PAD.r,H-PAD.b);ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='5.5px Inter';
+  ctx.fillText('Training checkpoints →',PAD.l+2,H-PAD.b+10);
+  ctx.save();ctx.translate(10,H/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('Normalized effect',0,0);ctx.restore();
+  // Saturation marker
+  const[sx]=toScreen(0.65,0);
+  ctx.strokeStyle='rgba(167,139,250,0.2)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(sx,PAD.t);ctx.lineTo(sx,H-PAD.b);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='rgba(167,139,250,0.4)';ctx.font='5.5px Inter';ctx.fillText('saturation',sx+2,PAD.t+8);
+}
+
+function frame(){
+  ctx.clearRect(0,0,W,H);
+  drawBg();
+  drawAxes();
+  const progress=Math.min(1,(t%200)/180);
+  drawCurve(logitInfl,'rgba(96,165,250,0.8)',progress);
+  drawCurve(taskSuccess,'rgba(74,222,128,0.8)',progress);
+  drawCurve(behavLev,'rgba(167,139,250,0.9)',progress);
+  t++;
+  if(t>220)t=0;
+  requestAnimationFrame(frame);
+}
+frame();
+</script></body></html>

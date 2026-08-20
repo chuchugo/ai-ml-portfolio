@@ -1,0 +1,84 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#070a12;overflow:hidden;width:100vw;height:100vh;font-family:'Inter',sans-serif}
+canvas{position:absolute;top:0;left:0}
+.ui{position:absolute;inset:0;display:flex;flex-direction:column;padding:8px;gap:5px;pointer-events:none}
+.hud{display:flex;justify-content:space-between}
+.chip{background:rgba(0,0,0,.7);border:1px solid rgba(96,165,250,.3);border-radius:5px;padding:3px 8px}
+.chip-l{font-size:6px;font-weight:700;letter-spacing:.1em;color:rgba(96,165,250,.7);text-transform:uppercase}
+.chip-v{font-size:9px;font-weight:700;color:#93c5fd}
+.bars{flex:1;display:flex;align-items:flex-end;gap:6px;padding:10px 8px 4px}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+.bar-bg{width:100%;border-radius:3px 3px 0 0;position:relative;overflow:hidden;transition:height .8s}
+.bar-fill{position:absolute;bottom:0;left:0;right:0;border-radius:3px 3px 0 0;transition:height 1.2s}
+.bar-label{font-size:5.5px;color:rgba(255,255,255,.4);text-align:center;line-height:1.3}
+.bar-val{font-size:7px;font-weight:700;color:#93c5fd;text-align:center}
+.bottom{display:flex;gap:5px}
+.stat-box{flex:1;background:rgba(0,0,0,.5);border:1px solid rgba(96,165,250,.15);border-radius:5px;padding:4px 6px;text-align:center}
+.stat-l{font-size:5.5px;color:rgba(96,165,250,.5);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.stat-v{font-size:9px;font-weight:700;color:#93c5fd}
+</style></head><body>
+<canvas id="c"></canvas>
+<div class="ui">
+  <div class="hud">
+    <div class="chip"><div class="chip-l">StatValidBench · AAAI 2027</div><div class="chip-v">Statistical Conclusion Support</div></div>
+    <div class="chip"><div class="chip-l">Best</div><div class="chip-v">85.4%</div></div>
+  </div>
+  <div class="bars" id="bars"></div>
+  <div class="bottom">
+    <div class="stat-box"><div class="stat-l">Baseline avg</div><div class="stat-v">74.1%</div></div>
+    <div class="stat-box"><div class="stat-l">StatValidAgent</div><div class="stat-v">85.4%</div></div>
+    <div class="stat-box"><div class="stat-l">Sim tasks</div><div class="stat-v">72</div></div>
+    <div class="stat-box"><div class="stat-l">Public tasks</div><div class="stat-v">20</div></div>
+  </div>
+</div>
+<script>
+const c=document.getElementById('c');
+const ctx=c.getContext('2d');
+c.width=c.clientWidth||400;c.height=c.clientHeight||240;
+
+// Draw subtle grid
+function drawBg(){
+  ctx.fillStyle='#070a12';ctx.fillRect(0,0,c.width,c.height);
+  ctx.strokeStyle='rgba(96,165,250,0.04)';ctx.lineWidth=1;
+  for(let x=0;x<c.width;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,c.height);ctx.stroke()}
+  for(let y=0;y<c.height;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(c.width,y);ctx.stroke()}
+}
+
+const models=['GPT-4o','GPT-4T','Gemini\n1.5P','Claude\n3.5S','Llama\n3.1','Qwen\n2.5'];
+const baseline=[0.741,0.728,0.715,0.756,0.698,0.712];
+const agent=   [0.854,0.841,0.829,0.862,0.818,0.833];
+
+const barsEl=document.getElementById('bars');
+models.forEach((m,i)=>{
+  const w=barsEl.cloneNode?barsEl:null;
+  const wrap=document.createElement('div');
+  wrap.className='bar-wrap';
+  wrap.innerHTML=`
+    <div class="bar-val" id="bv${i}">—</div>
+    <div style="width:100%;display:flex;gap:2px;align-items:flex-end;height:80px">
+      <div style="flex:1;display:flex;align-items:flex-end;height:100%">
+        <div id="bb${i}" style="width:100%;background:rgba(96,165,250,0.25);border-radius:3px 3px 0 0;height:0%;transition:height 1.2s"></div>
+      </div>
+      <div style="flex:1;display:flex;align-items:flex-end;height:100%">
+        <div id="ba${i}" style="width:100%;background:rgba(96,165,250,0.8);border-radius:3px 3px 0 0;height:0%;transition:height 1.2s"></div>
+      </div>
+    </div>
+    <div class="bar-label">${m}</div>`;
+  barsEl.appendChild(wrap);
+});
+
+let shown=false;
+setTimeout(()=>{
+  shown=true;
+  models.forEach((_,i)=>{
+    document.getElementById('bb'+i).style.height=(baseline[i]*100)+'%';
+    document.getElementById('ba'+i).style.height=(agent[i]*100)+'%';
+    document.getElementById('bv'+i).textContent=(agent[i]*100).toFixed(1)+'%';
+  });
+},400);
+
+function loop(){ctx.clearRect(0,0,c.width,c.height);drawBg();requestAnimationFrame(loop)}
+loop();
+</script></body></html>
