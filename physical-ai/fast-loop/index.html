@@ -13,6 +13,7 @@
     .nav-logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .hero-demo{width:100%;height:420px;overflow:hidden;border-bottom:1px solid var(--border);position:relative}
     .hero-demo iframe{width:100%;height:100%;border:none}
+    .hero-demo img{width:100%;height:100%;object-fit:cover}
     .hero-demo-overlay{position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,var(--bg));pointer-events:none}
     .container{max-width:860px;margin:0 auto;padding:3rem 2rem}
     .badge-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.2rem;align-items:center}
@@ -24,6 +25,7 @@
     .impact-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem}
     .impact-num{font-family:'Space Grotesk',sans-serif;font-size:1.4rem;font-weight:700;color:var(--accent2)}
     .impact-label{font-size:.78rem;color:var(--muted);margin-top:.2rem}
+    .impact-card.gold .impact-num{color:var(--gold)}
     h2{font-family:'Space Grotesk',sans-serif;font-size:1.2rem;font-weight:700;margin:2.5rem 0 1rem;padding-top:1rem;border-top:1px solid var(--border)}
     p{color:var(--muted);margin-bottom:1rem;line-height:1.75}
     .arch-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.2rem;margin:1rem 0;font-family:monospace;font-size:.8rem;color:#a0a0c0;white-space:pre;overflow-x:auto}
@@ -33,15 +35,29 @@
     th{text-align:left;padding:.5rem .75rem;color:var(--muted);font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border)}
     td{padding:.6rem .75rem;color:var(--muted);border-bottom:1px solid rgba(255,255,255,.04)}
     td:first-child{color:var(--text);font-weight:500}
-    .video-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.4rem;display:flex;align-items:center;gap:1rem;text-decoration:none;color:var(--text);transition:border-color .2s,transform .2s;margin:1rem 0}
-    .video-card:hover{border-color:var(--accent2);transform:translateY(-1px)}
-    .video-icon{font-size:2rem;flex-shrink:0}
-    .video-label{font-size:.95rem;font-weight:600;margin-bottom:.2rem}
-    .video-sub{font-size:.8rem;color:var(--muted)}
+    .highlight-row td{background:rgba(74,222,128,.05)}
+    .highlight-row td:first-child{color:#4ade80}
+    .photo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin:1rem 0 1.5rem}
+    .photo-grid img{width:100%;border-radius:8px;border:1px solid var(--border);object-fit:cover}
+    .arch-img{width:100%;border-radius:10px;border:1px solid var(--border);margin:1rem 0}
+    .result-card{background:var(--surface);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:1.2rem;margin:1rem 0;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+    .result-stat .rs-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:.3rem}
+    .result-stat .rs-val{font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:700;color:#4ade80}
+    .result-stat .rs-sub{font-size:.78rem;color:var(--muted);margin-top:.2rem}
+    .baseline-val{color:var(--muted) !important}
+    .delta{display:inline-block;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:#4ade80;border-radius:4px;padding:.1rem .5rem;font-size:.75rem;font-weight:700;margin-left:.4rem}
     .branch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.7rem;margin:.5rem 0 1.5rem}
     .branch-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.8rem 1rem}
     .branch-name{font-family:monospace;font-size:.78rem;color:var(--accent2);font-weight:600;margin-bottom:.2rem}
     .branch-desc{font-size:.75rem;color:var(--muted)}
+    .video-card{background:var(--surface);border:1px solid rgba(79,200,228,.25);border-radius:10px;padding:1.4rem;display:flex;align-items:center;gap:1rem;text-decoration:none;color:var(--text);transition:border-color .2s,transform .2s;margin:1rem 0}
+    .video-card:hover{border-color:var(--accent2);transform:translateY(-1px)}
+    .video-icon{font-size:2.2rem;flex-shrink:0}
+    .video-label{font-size:.95rem;font-weight:600;margin-bottom:.2rem}
+    .video-sub{font-size:.8rem;color:var(--muted)}
+    .sponsor-row{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0}
+    .sponsor-chip{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.3rem .8rem;font-size:.78rem;color:var(--muted);font-weight:500}
+    .sponsor-chip span{color:var(--text)}
     .btn-row{display:flex;gap:1rem;flex-wrap:wrap;margin-top:2.5rem;padding-top:2rem;border-top:1px solid var(--border)}
     .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.4rem;border-radius:8px;font-size:.88rem;font-weight:600;text-decoration:none;transition:all .2s}
     .btn-primary{background:linear-gradient(135deg,var(--accent),#6a5cd4);color:#fff}.btn-primary:hover{opacity:.88;transform:translateY(-1px)}
@@ -56,91 +72,137 @@
   <a href="https://github.com/chuchugo/fast-loop" target="_blank" style="color:var(--muted);font-size:.85rem;text-decoration:none">GitHub ↗</a>
 </nav>
 
+<!-- Hero: winner photo if available, else demo -->
 <div class="hero-demo">
-  <iframe src="../../projects/fast-loop/demo.html" title="Fast Loop Self-Improving Robotics Demo"></iframe>
+  <iframe src="../../projects/fast-loop/demo.html" title="Fast Loop Demo" id="hero-frame"></iframe>
   <div class="hero-demo-overlay"></div>
 </div>
 
 <div class="container">
   <div class="badge-row">
-    <span class="winner-badge">🏆 Top Winner · Physical AI Hackathon</span>
-    <span class="org-tag">Physical AI · Robotics · LLM</span>
+    <span class="winner-badge">🏆 Top Winner · 1st Place · Physical AI Hackathon</span>
+    <span class="org-tag">Physical AI · Robotics · VLA</span>
   </div>
-  <h1>Fast Loop: End-to-End Self-Improving Robotics Training</h1>
-  <p class="lead">Can robots teach themselves to get better — recursively? We built Fast Loop, an end-to-end self-improving training loop for robotics using SmolVLA + LoRA fine-tuning, with Claude Opus as the expert AI teacher. Presented at the Physical AI Hackathon hosted by NVIDIA × Nebius × Antioch × Toloka, where the team won 🏆 Top Winner.</p>
+  <h1>Fast Loop: End-to-End Self-Improving Robotics</h1>
+  <p class="lead">Can robots teach themselves to improve — recursively? Fast Loop answers yes. We built a complete self-improving training loop where a System-1 VLA acts, a Gate escalates high-uncertainty moves to a System-2 planner for re-verification in simulation, and outcomes feed back to improve the policy. Achieved <strong>83% held-out success vs 38% baseline (+46 pts)</strong> at the Physical AI Hackathon hosted by NVIDIA × Nebius × Antioch × Toloka.</p>
+
+  <!-- Winner photo -->
+  <div class="photo-grid" style="grid-template-columns:1fr">
+    <img src="winner-photo.jpg" alt="Fast Loop team — Top Winner at Physical AI Hackathon" onerror="this.style.display='none'" />
+  </div>
 
   <div class="impact-grid">
-    <div class="impact-card"><div class="impact-num">🏆 1st</div><div class="impact-label">Physical AI Hackathon · Top Winner</div></div>
-    <div class="impact-card"><div class="impact-num">Recursive</div><div class="impact-label">Self-improving training loop</div></div>
-    <div class="impact-card"><div class="impact-num">SmolVLA</div><div class="impact-label">+ LoRA fine-tuning backbone</div></div>
-    <div class="impact-card"><div class="impact-num">Claude Opus</div><div class="impact-label">Expert AI teacher / evaluator</div></div>
+    <div class="impact-card gold"><div class="impact-num">🏆 1st</div><div class="impact-label">Physical AI Hackathon · Top Winner</div></div>
+    <div class="impact-card"><div class="impact-num">83%</div><div class="impact-label">Held-out success rate</div></div>
+    <div class="impact-card"><div class="impact-num">+46 pts</div><div class="impact-label">vs 38% baseline</div></div>
+    <div class="impact-card"><div class="impact-num">System-1/2</div><div class="impact-label">Dual-system gate architecture</div></div>
   </div>
 
   <div class="tag-row">
-    <span class="tag">SmolVLA</span><span class="tag">LoRA</span><span class="tag">Claude Opus</span>
-    <span class="tag">Robotics</span><span class="tag">VLA</span><span class="tag">Antioch Simulation</span>
-    <span class="tag">Self-Supervised Learning</span><span class="tag">Physical AI</span><span class="tag">NVIDIA</span>
+    <span class="tag">SmolVLA</span><span class="tag">System-1 / System-2</span><span class="tag">LoRA</span>
+    <span class="tag">Antioch Sim</span><span class="tag">Nebius GPU</span><span class="tag">Cosmos (NVIDIA)</span>
+    <span class="tag">Toloka Eval</span><span class="tag">GR00T</span><span class="tag">LeRobot</span>
   </div>
 
-  <h2>The Problem</h2>
-  <p>Training robots has traditionally been a slow, time-consuming bottleneck. Every improvement requires human expertise, labeled data, and days of retraining. We asked a fundamental question: <strong>Can we achieve recursive self-improvement in robotics?</strong></p>
-  <p>Fast Loop answers yes — by letting the robot learn from an AI teacher (Claude Opus), evaluate its own policy quality, and fine-tune itself in a closed loop — no human in the loop required.</p>
+  <h2>Results</h2>
+  <div class="result-card">
+    <div class="result-stat">
+      <div class="rs-label">Held-out success</div>
+      <div class="rs-val">83% <span class="delta">+46 pts</span></div>
+      <div class="rs-sub">Fast Loop · Cup stacking &amp; Cube grasping</div>
+    </div>
+    <div class="result-stat">
+      <div class="rs-label">Baseline</div>
+      <div class="rs-val baseline-val">38%</div>
+      <div class="rs-sub">Without self-improvement loop</div>
+    </div>
+  </div>
 
-  <h2>Architecture — The Self-Improving Loop</h2>
-  <div class="arch-box">┌─────────────────────────────────────────────────────┐
-│               Fast Loop · Self-Improving Cycle       │
-└─────────────────────────────────────────────────────┘
+  <!-- App screenshot -->
+  <div class="photo-grid" style="grid-template-columns:1fr">
+    <img src="result-screenshot.jpg" alt="Fast Loop optimization result — 83% held-out success vs 38% baseline" onerror="this.style.display='none'" />
+  </div>
 
-  Antioch 3D Scene Editor
-  (motion profiles, simulation environment)
-          │
-          ▼
-  SmolVLA Policy Execution
-  (robot arm performs manipulation task)
-          │
-          ▼
-  Claude Opus — Expert Teacher
-  (evaluates trajectory quality, generates feedback,
-   produces improved demonstration labels)
-          │
-          ▼
-  LoRA Fine-Tuning
-  (lightweight adaptation of SmolVLA on teacher labels)
-          │
-          ▼
-  Improved Policy ──────────────────────▶ ↻ Iterate</div>
+  <h2>Architecture</h2>
+  <p>Fast Loop runs two loops in parallel — a <strong>Live Loop</strong> that executes on the robot in real-time, and an <strong>Offline Loop</strong> that continuously improves the VLA policy between runs.</p>
+
+  <!-- Architecture diagram -->
+  <img src="architecture-diagram.jpg" alt="Fast Loop architecture — Live loop and Offline loop" class="arch-img" onerror="this.style.display='none'" />
+
+  <div class="arch-box">━━━━━━━━━━━━━━━━━━ LIVE LOOP (runs on stage) ━━━━━━━━━━━━━━━━━━
+
+1. Perception           RGB-D → state estimate
+        │
+        ▼
+2. System-1 VLA         action + uncertainty estimate
+        │
+        ├──── low uncertainty ────▶  5. Action
+        │                            (robot + Antioch sim, execute chunk)
+        ▼                                      │
+3. Gate                 trust or escalate?     │
+        │                                      │
+        ▼ high uncertainty                     ▼
+4. System-2             re-plan + verify    6. Observe
+        └───────────── rollout in sim ──▶   outcome + error
+                                               │
+                                      ─────────▶ close loop (back to 1)
+
+━━━━━━━━━━━━━━━━━━ OFFLINE (before / between runs) ━━━━━━━━━━━━
+
+  Cosmos (NVIDIA)          Nebius GPU            Toloka-style eval
+  edge case generation  ·  finetune VLA (LoRA) · score + trust metric
+  stress the gate          adapt to task          eval harness
+
+━━━━━━━━━━━━━━━━━━ SPONSOR MAP ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Antioch = sim env + verification rollout
+  Nebius  = compute + finetune
+  NVIDIA  = Cosmos scenarios + LeRobot / GR00T policy
+  Toloka  = eval harness framing</div>
+
+  <h2>Tasks Demonstrated</h2>
+  <table>
+    <tr><th>Task</th><th>Preflight</th><th>Held-out Success</th><th>Baseline</th></tr>
+    <tr class="highlight-row"><td>Cup stacking</td><td>9/13</td><td>83%</td><td>38%</td></tr>
+    <tr class="highlight-row"><td>Cube grasping</td><td>10/10</td><td>83%</td><td>38%</td></tr>
+  </table>
 
   <h2>Video Demo</h2>
   <a href="https://lnkd.in/gxRx5nmr" target="_blank" class="video-card">
     <div class="video-icon">▶</div>
     <div>
-      <div class="video-label">Fast Loop · Live Demo Video</div>
-      <div class="video-sub">Robot arm self-improving across iterations — SmolVLA + LoRA + Claude Opus teacher</div>
+      <div class="video-label">Fast Loop · Full Demo Video</div>
+      <div class="video-sub">Robot self-improving across iterations — System-1/2 gate, Antioch sim, LoRA fine-tuning live</div>
     </div>
   </a>
-
-  <h2>Repository Branches</h2>
-  <div class="branch-grid">
-    <div class="branch-card"><div class="branch-name">main</div><div class="branch-desc">Core loop orchestration &amp; entry point</div></div>
-    <div class="branch-card"><div class="branch-name">fast-loop-frontend</div><div class="branch-desc">Web UI for monitoring training iterations</div></div>
-    <div class="branch-card"><div class="branch-name">AntiochSim</div><div class="branch-desc">3D simulation environment &amp; scene editor</div></div>
-    <div class="branch-card"><div class="branch-name">opus-motion-planner</div><div class="branch-desc">Claude Opus teacher integration &amp; motion planning</div></div>
-    <div class="branch-card"><div class="branch-name">so101-vla-physical-integration</div><div class="branch-desc">SO-101 arm hardware bridge &amp; VLA integration</div></div>
-  </div>
 
   <h2>Technology Stack</h2>
   <table>
     <tr><th>Component</th><th>Technology</th><th>Role</th></tr>
-    <tr><td>Vision-Language-Action</td><td>SmolVLA (HuggingFace)</td><td>Robot policy backbone</td></tr>
-    <tr><td>Fine-tuning</td><td>LoRA</td><td>Efficient adaptation without full retraining</td></tr>
-    <tr><td>AI Teacher</td><td>Claude Opus (Anthropic)</td><td>Trajectory evaluation &amp; improvement labels</td></tr>
-    <tr><td>Simulation</td><td>Antioch 3D Editor</td><td>Scene authoring &amp; motion profile generation</td></tr>
-    <tr><td>Hardware</td><td>SO-101 Robot Arm</td><td>Physical deployment target</td></tr>
-    <tr><td>Frontend</td><td>React</td><td>Training loop monitoring dashboard</td></tr>
+    <tr><td>VLA Backbone</td><td>SmolVLA / GR00T (LeRobot)</td><td>System-1 real-time policy</td></tr>
+    <tr><td>Fine-tuning</td><td>LoRA on Nebius GPU</td><td>Offline policy adaptation</td></tr>
+    <tr><td>Simulation</td><td>Antioch 3D</td><td>Verification rollout + scene editing</td></tr>
+    <tr><td>Edge cases</td><td>NVIDIA Cosmos</td><td>Stress the gate with synthetic scenarios</td></tr>
+    <tr><td>Evaluation</td><td>Toloka-style harness</td><td>Score + trust metric per episode</td></tr>
+    <tr><td>Hardware</td><td>SO-101 Robot Arm</td><td>Physical deployment</td></tr>
   </table>
 
-  <h2>Hackathon</h2>
-  <p>Built at the <strong>Physical AI Hackathon</strong> hosted by NVIDIA, Nebius, Antioch, and Toloka. The challenge: push the frontier of embodied AI by building a system that makes robot training faster, more autonomous, or more capable. Fast Loop won Top Winner by demonstrating a complete self-improving loop — from simulation to fine-tuning to policy improvement — in under 48 hours.</p>
+  <h2>Sponsors</h2>
+  <div class="sponsor-row">
+    <div class="sponsor-chip"><span>Nebius</span> · GPU compute + VLA finetune</div>
+    <div class="sponsor-chip"><span>NVIDIA</span> · Cosmos scenarios + LeRobot / GR00T</div>
+    <div class="sponsor-chip"><span>Antioch</span> · sim env + verification rollout</div>
+    <div class="sponsor-chip"><span>Toloka</span> · eval harness framing</div>
+  </div>
+
+  <h2>Repository Branches</h2>
+  <div class="branch-grid">
+    <div class="branch-card"><div class="branch-name">main</div><div class="branch-desc">Core loop orchestration &amp; entry point</div></div>
+    <div class="branch-card"><div class="branch-name">fast-loop-frontend</div><div class="branch-desc">Web dashboard for monitoring iterations</div></div>
+    <div class="branch-card"><div class="branch-name">AntiochSim</div><div class="branch-desc">3D sim environment &amp; scene editor</div></div>
+    <div class="branch-card"><div class="branch-name">opus-motion-planner</div><div class="branch-desc">System-2 motion planning &amp; re-planner</div></div>
+    <div class="branch-card"><div class="branch-name">so101-vla-physical-integration</div><div class="branch-desc">SO-101 hardware bridge + VLA integration</div></div>
+  </div>
 
   <div class="btn-row">
     <a href="../../index.html#experience" class="btn btn-primary">← Back to Portfolio</a>
